@@ -1,0 +1,1680 @@
+---
+title: "Deep learning"
+author: "Lê Huỳnh Thúy Vy"
+date: "2024-05-31"
+output: html_document
+---
+BƯỚC 1: TÌM HIỂU DỮ LIỆU + LÀM GIÀU DỮ LIỆU
+```{r}
+#Thêm thư viện
+library(keras)
+library(readxl)
+library(ggplot2)
+library(lubridate)
+library(ggfortify)
+library(xts)
+library(imputeTS)
+library(quantmod)
+```
+
+```{r}
+#Đọc file lấy dữ liệu 3 ngân  hàng
+VCB_stock <- read.csv("D:/TÀI LIỆU HỌC KỲ 4/Data Analytics with R/Cuối kỳ/Data/VCB_stock.csv")
+ACB_stock <- read.csv("D:/TÀI LIỆU HỌC KỲ 4/Data Analytics with R/Cuối kỳ/Data/ACB_stock.csv")
+BID_stock <- read.csv("D:/TÀI LIỆU HỌC KỲ 4/Data Analytics with R/Cuối kỳ/Data/BID_stock.csv")
+head(VCB_stock)
+```
+
+
+```{r}
+#Tìm hiểu cấu trúc và số dòng, cột của file data
+dim(VCB_stock)
+dim(ACB_stock)
+dim(BID_stock)
+# Data type
+str(VCB_stock)
+# Xuất tên các biến
+colnames(VCB_stock)
+colnames(ACB_stock)
+colnames(BID_stock)
+```
+```{r}
+#Lấy các cột cần thiết để phân tích
+
+VCB_stock  <- VCB_stock [, !(names(VCB_stock ) %in% c("code", "time", "floor", "type", "basicPrice", "ceilingPrice", "floorPrice", "average", "adOpen", "adHigh", "adLow", "adAverage", "nmValue",    "ptVolume", "ptValue", "change", "adChange", "pctChange" ))]
+
+ACB_stock  <- ACB_stock [, !(names(ACB_stock ) %in% c("code", "time", "floor", "type", "basicPrice", "ceilingPrice", "floorPrice", "average", "adOpen", "adHigh", "adLow", "adAverage", "nmValue",    "ptVolume", "ptValue", "change", "adChange", "pctChange" ))]
+
+BID_stock  <- BID_stock [, !(names(BID_stock ) %in% c("code", "time", "floor", "type", "basicPrice", "ceilingPrice", "floorPrice", "average", "adOpen", "adHigh", "adLow", "adAverage", "nmValue",    "ptVolume", "ptValue", "change", "adChange", "pctChange" ))]
+
+str(VCB_stock )
+str(ACB_stock )
+str(BID_stock )
+```
+
+
+```{r}
+library(dplyr)
+
+# Chuyển đổi cột "date" sang kiểu dữ liệu ngày tháng
+VCB_stock  <- VCB_stock %>%
+  mutate(date = as.Date(VCB_stock$date, format = "%Y-%m-%d"))
+
+ACB_stock  <- ACB_stock %>%
+  mutate(date = as.Date(ACB_stock$date, format = "%Y-%m-%d"))
+
+BID_stock  <- BID_stock %>%
+  mutate(date = as.Date(BID_stock$date, format = "%Y-%m-%d"))
+
+# Chuyển đổi bộ dữ liệu thành time series bằng cách dùng cột "date" làm index cho các cột còn lại
+
+VCB_stock <- xts(VCB_stock[, -1], order.by = VCB_stock$date)
+ACB_stock <- xts(ACB_stock[, -1], order.by = ACB_stock$date)
+BID_stock <- xts(BID_stock[, -1], order.by = BID_stock$date)
+```
+
+
+```{r}
+#Kiểm tra dữ liệu trống của tất cả các cột
+colSums(is.na(ACB_stock ))
+colSums(is.na(BID_stock ))
+```
+
+```{r}
+library(imputeTS)
+# Ngân hàng VCB
+# Nội suy để làm đều khoảng thời gian
+VCB_close <- VCB_stock$close 
+VCB_regular_dates <- seq(start(VCB_close),end(VCB_close),by = "day")
+VCB_xts_regular <- merge(VCB_close,xts(,VCB_regular_dates))
+VCB_xts_interpolated <- na.interpolation(VCB_xts_regular)
+
+# Kiểm tra dữ liệu sau khi nội suy
+dim(VCB_xts_interpolated)
+# Chuyển đổi đối tượng xts thành ts để sử dụng hàm decompose
+VCB_ts_interpolated <- ts(coredata(VCB_xts_interpolated), frequency = 365)
+
+# Decompose chuỗi thời gian
+VCB_close_decomposed <- decompose(VCB_ts_interpolated )
+plot(VCB_close_decomposed)
+```
+
+```{r}
+# Ngân hàng ACB
+# Nội suy để làm đều khoảng thời gian
+ACB_close <- ACB_stock$close 
+ACB_regular_dates <- seq(start(ACB_close),end(ACB_close),by = "day")
+ACB_xts_regular <- merge(ACB_close,xts(,ACB_regular_dates))
+ACB_xts_interpolated <- na.interpolation(ACB_xts_regular)
+
+# Kiểm tra dữ liệu sau khi nội suy
+dim(ACB_xts_interpolated)
+# Chuyển đổi đối tượng xts thành ts để sử dụng hàm decompose
+ACB_ts_interpolated <- ts(coredata(ACB_xts_interpolated), frequency = 365)
+
+# Decompose chuỗi thời gian
+ACB_close_decomposed <- decompose(ACB_ts_interpolated )
+plot(ACB_close_decomposed)
+```
+
+
+```{r}
+# Ngân hàng BIDV
+# Nội suy để làm đều khoảng thời gian
+BID_close <- BID_stock$close 
+BID_regular_dates <- seq(start(BID_close),end(BID_close),by = "day")
+
+BID_xts_regular <- merge(BID_close,xts(,BID_regular_dates))
+BID_xts_interpolated <- na.interpolation(BID_xts_regular)
+colSums(is.na(ACB_stock ))
+# Kiểm tra dữ liệu sau khi nội suy
+dim(BID_xts_interpolated)
+# Chuyển đổi đối tượng xts thành ts để sử dụng hàm decompose
+BID_ts_interpolated <- ts(coredata(BID_xts_interpolated), frequency = 365)
+head(BID_ts_interpolated)
+# Decompose chuỗi thời gian
+BID_close_decomposed <- decompose(BID_ts_interpolated )
+plot(BID_close_decomposed)
+
+```
+```{r plot}
+# Ngân hàng VCB
+# Lấy dữ liệu từ xts
+VCB_data <- coredata(VCB_xts_interpolated)
+
+# Chuyển đổi sang đối tượng ts
+VCB_start_date <- start(index(VCB_xts_interpolated))
+VCB_end_date <- end(index(VCB_xts_interpolated))
+VCB_ts <- as.ts(VCB_data, start = VCB_start_date, end = VCB_end_date)
+
+# Vẽ biểu đồ ACF, PACF
+acf(VCB_ts, main = "ACF of VCB's Close Prices", plot = TRUE)
+pacf_xts <- pacf(VCB_ts, main = "PACF of VCB's Close Prices")
+```
+```{r plot}
+# Ngân hàng ACB
+# Lấy dữ liệu từ xts
+ACB_data <- coredata(ACB_xts_interpolated)
+
+# Chuyển đổi sang đối tượng ts
+ACB_start_date <- start(index(ACB_xts_interpolated))
+ACB_end_date <- end(index(ACB_xts_interpolated))
+ACB_ts <- as.ts(ACB_data, start = ACB_start_date, end = ACB_end_date)
+
+# Vẽ biểu đồ ACF, PACF
+acf(ACB_ts, main = "ACF of ACB's Close Prices", plot = TRUE)
+pacf_xts <- pacf(ACB_ts, main = "PACF of ACB's Close Prices")
+```
+
+```{r}
+# Ngân hàng BIDV
+# Lấy dữ liệu từ xts
+data <- coredata(BID_xts_interpolated)
+
+# Chuyển đổi sang đối tượng ts
+start_date <- start(index(BID_xts_interpolated))
+end_date <- end(index(BID_xts_interpolated))
+BID_ts <- as.ts(data, start = start_date, end = end_date)
+
+# Vẽ biểu đồ ACF, PACF
+acf(BID_ts, main = "ACF of BID's Close Prices", plot = TRUE)
+pacf_xts <- pacf(BID_ts, main = "PACF of BID's Close Prices")
+```
+```{r}
+chartSeries(VCB_close , subset='2019-01::2024-04',
+theme=chartTheme('white'))
+addSMA(n=30,on=1,col = "black")
+addSMA(n=300,on=1,col = "red")
+```
+
+
+
+```{r}
+
+chartSeries(VCB_close , subset='2019-01::2024-04',
+theme=chartTheme('white'))
+addEMA(n=20,on=1,col = "black")
+addEMA(n=70,on=1,col = "red")
+```
+```{r}
+#Vẽ Bollingger band
+chartSeries(BID_close, theme = chartTheme("white"), TA = "addBBands()")
+
+```
+
+BƯỚC 2: PHÂN TÍCH KHÁM PHÁ
+Đọc file
+```{r}
+rm(list=ls())
+library(readxl)
+VCB <- read.csv("D:/R/Cuối kỳ/Data/VCB_stock.csv")
+BID <- read.csv("D:/R/Cuối kỳ/Data/BID_stock.csv")
+ACB <- read.csv("D:/R/Cuối kỳ/Data/ACB_stock.csv")
+
+head(VCB)
+head(BID)
+head(ACB)
+```
+
+Tách các cột dữ liệu cần dùng thành data frame mới gồm: date, open, high, low, close, change, nmVolume.
+```{r}
+VCB <- VCB[, !(names(VCB) %in% c("code", "adClose", "time", "floor", "type", "basicPrice", "ceilingPrice", "floorPrice", "average", "adOpen", "adHigh", "adLow", "adAverage", "nmValue",    "ptVolume", "ptValue", "adChange", "pctChange" ))]
+head(VCB)
+
+BID <- BID[, !(names(BID) %in% c("code", "adClose", "time", "floor", "type", "basicPrice", "ceilingPrice", "floorPrice", "average", "adOpen", "adHigh", "adLow", "adAverage", "nmValue",    "ptVolume", "ptValue", "adChange", "pctChange" ))]
+head(BID)
+
+ACB <- ACB[, !(names(ACB) %in% c("code", "adClose", "time", "floor", "type", "basicPrice", "ceilingPrice", "floorPrice", "average", "adOpen", "adHigh", "adLow", "adAverage", "nmValue",    "ptVolume", "ptValue", "adChange", "pctChange" ))]
+head(ACB)
+```
+Chuyển đổi kiểu dữ liệu "chr" của cột date sang kiểu dữ liệu "date" để thuận tiện cho việc phân tích theo chuỗi thời gian. Sau đó biến đổi cột date thành time series bằng cách index thêm giá đóng cửa vào cột date.
+```{r}
+library(dplyr)
+library(xts)
+# Chuyển đổi cột "VCB.date" sang kiểu dữ liệu ngày tháng
+VCB <- VCB %>%
+  mutate(date = as.Date(date, format = "%Y-%m-%d"))
+#Biến đổi cột date thành time series
+VCB$date <- as.Date(VCB$date)
+VCB$close <- xts(VCB$close, order.by = VCB$date)
+head(VCB$close , 1)
+
+# Chuyển đổi cột "VCB.date" sang kiểu dữ liệu ngày tháng
+BID <- BID %>%
+  mutate(date = as.Date(date, format = "%Y-%m-%d"))
+#Biến đổi cột date thành time series
+BID$date <- as.Date(BID$date)
+BID$close <- xts(BID$close, order.by = BID$date)
+head(BID$close , 1)
+
+# Chuyển đổi cột "VCB.date" sang kiểu dữ liệu ngày tháng
+ACB <- ACB %>%
+  mutate(date = as.Date(date, format = "%Y-%m-%d"))
+#Biến đổi cột date thành time series
+ACB$date <- as.Date(ACB$date)
+ACB$close <- xts(ACB$close, order.by = ACB$date)
+head(ACB$close , 1)
+```
+2.3 Phân tích khai phá
+2.3.1 Phân tích thống kê mô tả và phân phối các biến
+a. Phân tích thống kê mô tả các biến
+```{r}
+print("Thống kê mô tả của VCB: ")
+summary(VCB)
+cat("\n")
+print("Thống kê mô tả của BID: ")
+summary(BID)
+cat("\n")
+print("Thống kê mô tả của ACB: ")
+summary(ACB)
+```
+Tính phương sai và độ lệch chuẩn
+```{r}
+# Tính phương sai cho tất cả các biến theo từng ngân hàng
+variance_all <- lapply(list(VCB, BID, ACB), function(df) sapply(df[, -1], var))
+
+# Tính độ lệch chuẩn cho tất cả các biến theo từng ngân hàng
+sd_all <- lapply(list(VCB, BID, ACB), function(df) sapply(df[, -1], sd))
+
+# Định dạng kết quả
+formatted_variance <- lapply(variance_all, function(x) format(x, scientific = FALSE))
+formatted_sd <- lapply(sd_all, function(x) format(x, scientific = FALSE))
+
+# Hiển thị kết quả
+names(formatted_variance) <- c("VCB", "BID", "ACB")
+names(formatted_sd) <- c("VCB", "BID", "ACB")
+
+print("Phương sai theo từng ngân hàng:")
+print(formatted_variance)
+print("\nĐộ lệch chuẩn theo từng ngân hàng:")
+print(formatted_sd)
+
+```
+
+Vẽ biểu đồ đường giá đóng cửa của 3 ngân hàng dựa trên Volumn
+```{r}
+library(ggplot2)
+
+# Kết hợp dữ liệu từ ba ngân hàng VCB, BID và ACB
+combined_data <- rbind(
+  transform(VCB, bank = "VCB"),
+  transform(BID, bank = "BID"),
+  transform(ACB, bank = "ACB")
+)
+
+# Vẽ biểu đồ đường cho giá đóng cửa của ba ngân hàng trên cùng một trục xy
+ggplot(data = combined_data, aes(x = date, y = close, color = bank)) +
+  geom_line() +
+  labs(x = "Date", y = "Closing Price", title = "Closing Price of Banks") +
+  scale_color_manual(values = c("red", "green", "blue")) +
+  theme_minimal()
+
+```
+b. Phân tích phân phối của các biến 
+Vẽ biểu đồ boxplpot kết hợp theo các biến open, low, high, close của 3 ngân hàng.
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(xts)
+
+# Chuyển các dataframe từ xts sang data.frame
+VCB_df <- data.frame(date = index(VCB), coredata(VCB))
+BID_df <- data.frame(date = index(BID), coredata(BID))
+ACB_df <- data.frame(date = index(ACB), coredata(ACB))
+
+# Chuyển đổi các cột `close`, `high`, `low`, `open` sang kiểu `double`
+VCB_df <- VCB_df %>% mutate(across(c(close, high, low, open), as.double))
+BID_df <- BID_df %>% mutate(across(c(close, high, low, open), as.double))
+ACB_df <- ACB_df %>% mutate(across(c(close, high, low, open), as.double))
+
+# Thêm cột bank vào từng dataframe
+VCB_df <- VCB_df %>% mutate(bank = "VCB")
+BID_df <- BID_df %>% mutate(bank = "BID")
+ACB_df <- ACB_df %>% mutate(bank = "ACB")
+
+# Kết hợp dữ liệu từ ba ngân hàng
+combined_data <- bind_rows(VCB_df, BID_df, ACB_df)
+
+# Chuyển đổi dữ liệu thành dạng dài (long format)
+combined_data_long <- combined_data %>%
+  pivot_longer(cols = c(close, high, low, open), names_to = "variable", values_to = "value")
+
+# Vẽ biểu đồ boxplot
+ggplot(combined_data_long, aes(x = variable, y = value, fill = bank)) +
+  geom_boxplot() +
+  labs(x = "Variable", y = "Price", fill = "Bank") +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+Vẽ biểu đồ boxplot của biến khối lượng giao dịch cho 3 ngân hàng
+```{r}
+library(ggplot2)
+
+# Vẽ biểu đồ boxplot của biến khối lượng giao dịch
+ggplot(combined_data, aes(x = bank, y = nmVolume, fill = bank)) +
+  geom_boxplot() +
+  labs(x = "Ngân hàng", y = "Khối lượng giao dịch", fill = "Ngân hàng") +
+  theme_minimal()
+ 
+```
+2.3.2 Tìm và xử lí dữ liệu rỗng
+Kiểm tra dữ liệu rỗng của 3 ngân hàng
+```{r}
+print("Số dữ liệu rỗng của VCB: ")
+colSums(is.na(VCB))
+print("Số dữ liệu rỗng của BID: ")
+colSums(is.na(BID))
+print("Số dữ liệu rỗng của ACB: ")
+colSums(is.na(ACB))
+```
+2.3.2 Tìm và xử lí ngoại lai
+```{r}
+# Định nghĩa hàm xác định ngoại lai
+find_outliers <- function(data, column_name, k = 1.5) {
+  # Trích xuất cột cần kiểm tra
+  column_data <- data[[column_name]]
+  
+  # Tính Q1 và Q3
+  Q1 <- quantile(column_data, 0.25)
+  Q3 <- quantile(column_data, 0.75)
+  
+  # Tính IQR
+  IQR_value <- IQR(column_data)
+  
+  # Xác định khoảng giá trị bình thường
+  lower_bound <- Q1 - k * IQR_value
+  upper_bound <- Q3 + k * IQR_value
+  
+  # Xác định các giá trị ngoại lai
+  outliers <- column_data[column_data < lower_bound | column_data > upper_bound]
+  
+  # Trả về các giá trị ngoại lai
+  return(list(outliers = outliers, lower_bound = lower_bound, upper_bound = upper_bound))
+}
+```
+
+a. Tìm ngoại lai các biến close, volume của VCB
+```{r}
+hist(VCB$nmVolume, main = "Histogram of VCB.nmVolume")
+hist(VCB$close, main = "Histogram of VCB.close")
+```
+Tìm các ngoại lai bằng IQR. Với k = 1.5
+```{r}
+# Sử dụng hàm để xác định ngoại lai cho cột Close
+outliers_close <- find_outliers(VCB, "close")
+vcb_outliers_close <- outliers_close$outliers
+lower_bound_close_vcb <- outliers_close$lower_bound
+upper_bound_close_vcb <- outliers_close$upper_bound
+
+# Sử dụng hàm để xác định ngoại lai cho cột Volume
+outliers_volume <- find_outliers(VCB, "nmVolume")
+vcb_outliers_volume <- outliers_volume$outliers
+lower_bound_volume_vcb <- outliers_volume$lower_bound
+upper_bound_volume_vcb <- outliers_volume$upper_bound
+
+# Hiển thị kết quả
+print("Outliers in Close:")
+print(vcb_outliers_close)
+
+print("Outliers in Volume:")
+print(vcb_outliers_volume)
+```
+
+Kết quả cho thấy có 133 outliers như trên.
+Trực quan lại các điểm outlier bằng biểu đồ scatter.
+```{r}
+vcb_plot <- ggplot(VCB, aes(x = close, y = nmVolume)) +
+  geom_point(aes(color = nmVolume < lower_bound_volume_vcb | nmVolume > upper_bound_volume_vcb),
+             shape = 16) +
+  scale_color_manual(values = c('TRUE' = 'red', 'FALSE' = 'blue')) +
+  labs(x = 'Closing Price', y = 'Volume', title = 'Scatter Plot of Closing Price vs Volume') +
+  theme_minimal() +
+  guides(color = "none") # Ẩn chú thích
+
+# Hiển thị đồ thị
+print(vcb_plot)
+
+#Biến Volume
+vcb_plot <- ggplot(VCB, aes(x = date, y = nmVolume)) +
+  geom_point(aes(color = nmVolume < lower_bound_volume_vcb | nmVolume > upper_bound_volume_vcb),
+             shape = 16) +
+  scale_color_manual(values = c('TRUE' = 'red', 'FALSE' = 'blue')) +
+  labs(x = 'date', y = 'Volume', title = 'Scatter Plot of Volume of ACB') +
+  theme_minimal() +
+  guides(color = "none") # Ẩn chú thích
+
+# Hiển thị đồ thị
+print(vcb_plot)
+```
+
+
+Kiểm tra thông tin của các outlier 
+```{r}
+# Tạo dataframe mới gồm thông tin của outliers
+VCB_outliers <- VCB[(VCB$nmVolume %in%
+vcb_outliers_volume), ]
+
+# Hiển thị thông tin của 2 cột từ VCB_outliers
+print("VCB_outliers:")
+print(VCB_outliers[, c("nmVolume", "date")])
+```
+
+b. Tìm ngoại lai các biến close, volume của BID
+```{r}
+hist(BID$nmVolume, main = "Histogram of BID.nmVolume")
+hist(BID$close, main = "Histogram of BID.close")
+```
+
+Tìm các ngoại lai bằng IQR. Với k = 1.5
+```{r}
+# Sử dụng hàm để xác định ngoại lai cho cột Volume
+bid_outliers_volume <- find_outliers(BID, "nmVolume")
+
+print("Outliers in Volume:")
+print(bid_outliers_volume$outliers)
+```
+
+Kết quả cho thấy có 106 outliers như trên.
+Trực quan lại các điểm outlier bằng biểu đồ scatter.
+```{r}
+bid_plot <- ggplot(BID, aes(x = close, y = nmVolume)) +
+  geom_point(aes(color =  nmVolume < bid_outliers_volume$lower_bound | nmVolume > bid_outliers_volume$upper_bound),
+             shape = 16) +
+  scale_color_manual(values = c('TRUE' = 'red', 'FALSE' = 'blue')) +
+  labs(x = 'Closing Price', y = 'Volume', title = 'Scatter Plot of Closing Price vs Volume') +
+  theme_minimal() +
+  guides(color = "none") # Ẩn chú thích
+
+# Hiển thị đồ thị
+print(bid_plot)
+
+#Biến Volume
+bid_plot <- ggplot(BID, aes(x = date, y = nmVolume)) +
+  geom_point(aes(color = nmVolume < bid_outliers_volume$lower_bound | nmVolume > bid_outliers_volume$upper_bound),
+             shape = 16) +
+  scale_color_manual(values = c('TRUE' = 'red', 'FALSE' = 'blue')) +
+  labs(x = 'date', y = 'Volume', title = 'Scatter Plot of Volume of BID') +
+  theme_minimal() +
+  guides(color = "none") # Ẩn chú thích
+
+# Hiển thị đồ thị
+print(bid_plot)
+```
+
+
+```{r}
+# Lọc dữ liệu BID để chỉ lấy những hàng có giá trị nmVolume là ngoại lai
+bid_outliers_volume_data <- BID[BID$nmVolume %in% bid_outliers_volume$outliers, c("date", "nmVolume")]
+
+# Hiển thị kết quả
+print("Outliers in Volume (including date):")
+print(bid_outliers_volume_data)
+```
+
+c. Tìm và xử các ngoại lại trong biến high, low, open, nmVolume của ACB
+Vẽ biểu đồ phân phối histogram đối với các biến nghi ngờ có ngoại lai
+```{r}
+hist(ACB$low, main = "Histogram of ACB.low")
+hist(ACB$high, main = "Histogram of ACB.high")
+hist(ACB$open, main = "Histogram of ACB.open")
+hist(ACB$close, main = "Histogram of ACB.close")
+hist(ACB$nmVolume, main = "Histogram of ACB.nmVolume")
+```
+
+Tìm các ngoại lai bằng IQR. Với k = 1.5
+```{r}
+# Sử dụng hàm để xác định ngoại lai cho cột Low
+acb_outliers_low <- find_outliers(ACB, "low")
+acb_outliers_high <- find_outliers(ACB, "high")
+acb_outliers_open <- find_outliers(ACB, "open")
+acb_outliers_close <- find_outliers(ACB, "close")
+acb_outliers_volume <- find_outliers(ACB, "nmVolume")
+# Hiển thị kết quả
+print("Outliers in Low:")
+print(acb_outliers_low$outliers)
+
+print("Outliers in High:")
+print(acb_outliers_high$outliers)
+
+print("Outliers in Open:")
+print(acb_outliers_open$outliers)
+
+print("Outliers in Close:")
+print(acb_outliers_close$outliers)
+
+print("Outliers in Volume:")
+print(acb_outliers_volume$outliers)
+```
+Trực quan lại các điểm outlier của Close bằng biểu đồ scatter.
+```{r}
+#Biến Close
+acb_plot <- ggplot(ACB, aes(x = date, y = close)) +
+  geom_point(aes(color = close < acb_outliers_close$lower_bound | close > acb_outliers_close$upper_bound),
+             shape = 16) +
+  scale_color_manual(values = c('TRUE' = 'red', 'FALSE' = 'blue')) +
+  labs(x = 'date', y = 'Close Price', title = 'Scatter Plot of Closing Price of ACB') +
+  theme_minimal() +
+  guides(color = "none") # Ẩn chú thích
+
+# Hiển thị đồ thị
+print(acb_plot)
+```
+
+Trực quan lại các điểm outlier của Volume bằng biểu đồ scatter.
+```{r}
+# Tạo Scatter plot giá đóng cửa ngân hàng VCB
+acb_volume <- ggplot(ACB, aes(x = close  , y = nmVolume)) +
+  geom_point(color = 'blue', shape = 16) +
+  labs(x = 'date', y = 'Volume', title = 'Scatter Plot of Volume')
+acb_volume +
+  geom_point(data = ACB, aes(x = close, y = nmVolume),
+             color = ifelse(ACB$nmVolume < acb_outliers_volume$lower_bound |
+                            ACB$nmVolume > acb_outliers_volume$upper_bound, 'red','blue'),
+             shape = 16)
+
+# Tạo Scatter plot giá đóng cửa ngân hàng VCB
+acb_volume <- ggplot(ACB, aes(x = date  , y = nmVolume)) +
+  geom_point(color = 'blue', shape = 16) +
+  labs(x = 'date', y = 'Volume', title = 'Scatter Plot of Volume')
+acb_volume +
+  geom_point(data = ACB, aes(x = date, y = nmVolume),
+             color = ifelse(ACB$nmVolume < acb_outliers_volume$lower_bound |
+                            ACB$nmVolume > acb_outliers_volume$upper_bound, 'red','blue'),
+             shape = 16)
+
+```
+
+Kiểm tra thông các ngoại lai.
+```{r}
+# Lọc dữ liệu ACB để chỉ lấy những hàng có giá trị Low là ngoại lai
+acb_outliers_low_data <- ACB[ACB$low %in% acb_outliers_low$outliers, c("date", "low")]
+
+# Hiển thị kết quả
+print("Outliers in Low (including date):")
+print(acb_outliers_low_data)
+
+# Lọc dữ liệu ACB để chỉ lấy những hàng có giá trị High là ngoại lai
+acb_outliers_high_data <- ACB[ACB$high %in% acb_outliers_high$outliers, c("date", "high")]
+
+# Hiển thị kết quả
+print("Outliers in High (including date):")
+print(acb_outliers_high_data)
+
+# Lọc dữ liệu ACB để chỉ lấy những hàng có giá trị Open là ngoại lai
+acb_outliers_open_data <- ACB[ACB$open %in% acb_outliers_open$outliers, c("date", "open")]
+
+# Hiển thị kết quả
+print("Outliers in Open (including date):")
+print(acb_outliers_open_data)
+
+# Lọc dữ liệu ACB để chỉ lấy những hàng có giá trị nmVolume là ngoại lai
+acb_outliers_volume_data <- ACB[ACB$nmVolume %in% acb_outliers_volume$outliers, c("date", "nmVolume")]
+
+# Hiển thị kết quả
+print("Outliers in Volume (including date):")
+print(acb_outliers_volume_data)
+```
+2.3.4 Phân tích tương quan giữa các biến
+a) Tính toán độ tương quan giữa các biến trong VCB
+```{r}
+library(GGally)
+library(Hmisc)
+library(corrplot)
+vars <- c("low", "high", "open", "close", "nmVolume")
+
+# Tính ma trận tương quan và giá trị p
+cor_results <- rcorr(as.matrix(VCB[vars]), type = "pearson")
+
+# Ma trận tương quan
+cor_matrix <- cor_results$r
+
+# Ma trận giá trị p
+p_matrix <- cor_results$P
+
+# In ma trận tương quan
+print("Ma trận tương quan:")
+print(cor_matrix)
+# In ma trận giá trị p
+print("P-value Matrix:")
+print(p_matrix)
+
+# Trực quan hóa ma trận tương quan bằng heatmap
+corrplot(cor_matrix, method = "color", addCoef.col = "black", tl.col = "black", tl.srt = 45)
+```
+Kết quả trên cho thấy các low, high, open, close của VCB có mối quan hệ đồng biến/mối tương quan tuyến tính tuyệt đối (giá trị tương quan bằng 1) với nhau.
+Ngược lại, biến Volume với giá trị tương quan gần như bằng 0 với các biến còn lại cho thấy một mối tương quan yếu, là mối quan hệ độc lập với nhau.
+
+b) Tính toán tương quan giữa các biến trong BID
+```{r}
+vars <- c("low", "high", "open", "close", "nmVolume")
+
+# Tính ma trận tương quan và giá trị p
+cor_results <- rcorr(as.matrix(BID[vars]), type = "pearson")
+
+# Ma trận tương quan
+cor_matrix <- cor_results$r
+
+# Ma trận giá trị p
+p_matrix <- cor_results$P
+
+# In ma trận tương quan
+print("Ma trận tương quan:")
+print(cor_matrix)
+# In ma trận giá trị p
+print("P-value Matrix:")
+print(p_matrix)
+
+# Trực quan hóa ma trận tương quan bằng heatmap
+corrplot(cor_matrix, method = "color", addCoef.col = "black", tl.col = "black", tl.srt = 45)
+
+```
+
+c) Tính toán tương quan giữa các biến trong ACB
+```{r}
+vars <- c("low", "high", "open", "close", "nmVolume")
+
+# Tính ma trận tương quan và giá trị p
+cor_results <- rcorr(as.matrix(ACB[vars]), type = "pearson")
+
+# Ma trận tương quan
+cor_matrix <- cor_results$r
+
+# Ma trận giá trị p
+p_matrix <- cor_results$P
+
+# In ma trận tương quan
+print(cor_matrix)
+# In ma trận giá trị p
+print("P-value Matrix:")
+print(p_matrix)
+
+# Trực quan hóa ma trận tương quan bằng heatmap
+corrplot(cor_matrix, method = "color", addCoef.col = "black", tl.col = "black", tl.srt = 45)
+
+```
+
+BƯỚC 3: TIỀN XỬ LÝ DỮ LIỆU
+```{r}
+#install.packages("e1071")
+install.packages("zoo")
+```
+```{r}
+library(readr)
+library(xts)
+library(dplyr)
+library(forecast)
+library(ggplot2)
+library(gridExtra) # for arranging plots
+library(e1071)  # Chứa hàm skewness
+library(zoo)
+
+```
+
+```{r}
+# Import data
+rm(list=ls())
+VCB <- read_csv("C:/Users/HP/OneDrive/Desktop/R Final/Data gốc/VCB_stock.csv")
+BID <- read_csv("C:/Users/HP/OneDrive/Desktop/R Final/Data gốc/BID_stock.csv")
+ACB <- read_csv("C:/Users/HP/OneDrive/Desktop/R Final/Data gốc/ACB_stock.csv")
+head(VCB)
+```
+
+
+## Biến đổi dữ liệu
+
+```{r}
+# Xây dựng hàm để phân tích độ lệch của dữ liệu sau khi áp dụng 4 phương pháp transform: log, square root, Box-cox va cube root
+
+analyze_skewness <- function(data, x) {
+  # Biến đổi dữ liệu
+  data_transformed <- data %>%
+    mutate(
+      log = log(!!sym(x)),
+      sqrt = sqrt(!!sym(x)),
+      boxcox = forecast::BoxCox(!!sym(x), lambda = forecast::BoxCox.lambda(!!sym(x), method="loglik")),
+      cuberoot = (!!sym(x))^(1/3)
+    )
+  
+  # In độ lệch
+  print(paste("Skewness original:", skewness(data[[x]])))
+  print(paste("Skewness log:", skewness(data_transformed$log)))
+  print(paste("Skewness sqrt:", skewness(data_transformed$sqrt)))
+  print(paste("Skewness boxcox:", skewness(data_transformed$boxcox)))
+  print(paste("Skewness cuberoot:", skewness(data_transformed$cuberoot)))
+
+}
+```
+
+```{r}
+# Thử nghiệm 4 phương pháp transformation vào dữ liệu ngân hàng VCB
+analyze_skewness(VCB, "close")
+```
+
+```{r}
+# Thử nghiệm 4 phương pháp transformation vào dữ liệu ngân hàng BIDV
+analyze_skewness(BID, "close")
+```
+
+```{r}
+# Thử nghiệm 4 phương pháp transformation vào dữ liệu ngân hàng ACB
+analyze_skewness(ACB, "close")
+```
+
+```{r}
+# Biến đổi dữ liệu 3 ngân hàng theo phương pháp phù hợp
+VCB_transformed <- data.frame(VCB$date, close_transformed = sqrt(VCB$close))
+
+BID_transformed <- data.frame(BID$date, close_transformed=BID$close) #Không cần biến đổi vì giá trị skewness đã gần 0 nhất
+
+ACB_lambda <- BoxCox.lambda(ACB$close,  method="loglik")
+ACB_transformed <- data.frame(ACB$date, close_transformed = BoxCox(ACB$close, ACB_lambda))
+
+head(VCB_transformed)
+head(BID_transformed)
+head(ACB_transformed)
+```
+
+```{r}
+# Xây dựng hàm chuẩn hóa dữ liệu với Min-max scaling
+
+min_max_scale <- function(x) {
+  # Tính giá trị min và max
+  min_val <- min(x)
+  max_val <- max(x)
+  
+  # Áp dụng công thức Min-Max Scaling
+  scaled_x <- (x - min_val) / (max_val - min_val)
+  print(min_val)
+  print(max_val)
+  return(scaled_x)
+  
+}
+```
+
+```{r}
+VCB_transformed$close_scaled <- min_max_scale(VCB_transformed$close_transformed)
+
+BID_transformed$close_scaled <- min_max_scale(BID_transformed$close_transformed)
+
+ACB_transformed$close_scaled <- min_max_scale(ACB_transformed$close_transformed)
+```
+```{r}
+head(VCB_transformed)
+```
+
+```{r}
+#Biến đổi cột close_scaled thành time series
+
+VCB_transformed$VCB.date <- as.Date(VCB_transformed$VCB.date)
+VCB_transformed$close_scaled <- xts(VCB_transformed$close_scaled, order.by = VCB_transformed$VCB.date)
+
+BID_transformed$BID.date <- as.Date(BID_transformed$BID.date)
+BID_transformed$close_scaled <- xts(BID_transformed$close_scaled, order.by = BID_transformed$BID.date)
+
+
+ACB_transformed$ACB.date <- as.Date(ACB_transformed$ACB.date)
+ACB_transformed$close_scaled <- xts(ACB_transformed$close_scaled, order.by = ACB_transformed$ACB.date)
+
+head(VCB_transformed)
+
+```
+```{r}
+#Xuất file dữ liệu chỉ gồm cột close_scaled
+
+write.csv(VCB_transformed, file = "Close_Scaled.csv", row.names = FALSE)
+
+
+# Xuất DataFrame mới ra file CSV
+#write.csv(data_to_export, file = "Close_Scaled.csv", #row.names = FALSE)
+```
+
+BƯỚC 4: XÂY DỰNG MODEL RNN
+```{r}
+library(readr)
+library(reticulate)
+library(caret)
+library(xts)
+library(keras)
+library(ggplot2)
+library(scales)
+```
+
+```{r}
+#Đọc file
+rm(list=ls())
+VCB <- read_csv("D:/VCB_stock.csv")
+ACB <- read_csv("C:/Users/HP/OneDrive/Desktop/R Final/Data gốc/ACB_stock.csv")
+BID <- read_csv("C:/Users/HP/OneDrive/Desktop/R Final/Data gốc/BID_stock.csv")
+
+```
+
+```{r}
+# Tách cột close, date
+extract_close_date <- function(data) {
+  return(data[, c("close", "date")])
+}
+
+
+# Scale dữ liệu theo min-max
+scale <- function(data) {
+  # Chuẩn bị thông tin cho việc scale
+  preProcValues <- preProcess(data, method = c("range"), rangeBounds = c(0, 1))
+  
+  # Scale dữ liệu
+  scaled_data <- predict(preProcValues, data)
+}
+
+
+time_series <- function(data) {
+  # Chuyển đổi cột 'date' thành định dạng Date
+  data$date <- as.Date(data$date)
+  
+  # Chuyển cột 'close' thành đối tượng xts với 'date' làm thứ tự
+  data$close <- xts(data$close, order.by = data$date)
+  return(data)
+}
+
+
+split_dataset <- function(data) {
+  size <- nrow(data)
+  train_size <- floor(size * 0.8)
+  valid_size <- floor(size * 0.15)
+  
+  cat("Size of the dataset:", size, "\n")
+  cat("Train size:", train_size, "\n")
+  cat("Validation size:", valid_size, "\n")
+  
+  return(list(
+    train = data[1:train_size, ],
+    validation = data[(train_size + 1):(train_size + valid_size), ],
+    test = data[(train_size + valid_size + 1):size,],
+    train_size = train_size,
+    valid_size = valid_size,
+    test_size = size-train_size-valid_size,
+    size = size
+  ))
+}
+
+
+
+construct_data <- function(data, window_size) {
+  # Khởi tạo các biến dữ liệu
+  x_data <- list()
+  y_data <- numeric()
+  
+  # Duyệt qua tập dữ liệu
+  for (i in seq(window_size, nrow(data))) {
+    if (i <= nrow(data)-1){
+      x_data[[length(x_data) + 1]] <- data[(i - window_size + 1):i, ]
+      y_data <- c(y_data, data[i+1, 1])
+    }
+  }
+  # Chuyển đổi danh sách thành mảng 3D và vector
+  x_data_array <- array(NA, dim = c(length(x_data), window_size, 1))
+  for (i in 1:length(x_data)) {
+    x_data_array[i,,] <- x_data[[i]]
+  }
+  y_data_array <- array(y_data, dim = c(length(y_data), 1))
+  
+  return(list(x_data = x_data_array, 
+              y_data = y_data_array))
+}
+```
+
+```{r}
+rnn_workflow <- function(input_shape, x_train, y_train, x_validation, y_validation, x_test, y_test, data, epochs, batch_size, optimizer = 'adam', loss = 'mean_squared_error', metrics = c('accuracy')) {
+  
+  # Create RNN model
+  model <- keras_model_sequential() 
+  model %>%
+    layer_simple_rnn(units = 64, activation = 'tanh', return_sequences = TRUE, input_shape = input_shape) %>%
+    layer_dropout(rate = 0.2) %>%
+    layer_simple_rnn(units = 128, activation = "tanh", return_sequences = TRUE) %>%
+    layer_dropout(rate = 0.2) %>%
+    layer_simple_rnn(units = 256, activation = "tanh", return_sequences = TRUE) %>%
+    layer_dropout(rate = 0.2) %>%
+    layer_simple_rnn(units = 512, activation = "tanh") %>%
+    layer_dropout(rate = 0.2) %>%
+    layer_dense(units = 1)
+  
+  # Compile the model
+  model %>% compile(
+    optimizer = 'adam',
+    loss = 'mean_squared_error',
+    metrics = c('accuracy')
+  )
+  
+  # Train the model
+  history <- model %>% fit(
+    x = x_train, 
+    y = y_train,
+    epochs = epochs, 
+    batch_size = batch_size,
+    validation_data = list(x_validation, y_validation)
+  )
+  
+  # Predict and evaluate
+  y_train_pred <- model %>% predict(x_train)
+  y_validation_pred <- model %>% predict(x_validation)
+  y_test_pred <- model %>% predict(x_test)
+
+  
+  #shift <- length(y_train_pred_original)
+  #y_test_pred_orig_shifted <- c(rep(NA, shift), y_test_pred_original[,1])
+  
+  mse <- mean((y_test - y_test_pred)^2)
+  rmse <- sqrt(mse)
+  mape <- mean(abs((y_test - y_test_pred) / y_test)) * 100
+  ss_res <- sum((y_test - y_test_pred)^2)
+  ss_tot <- sum((y_test - mean(y_test))^2)
+  rsquared <- 1 - (ss_res/ss_tot)
+  
+  eval_score <- list(mse = mse, rmse = rmse, mape = mape, rsquared = rsquared)
+  
+  return(list(model = model,
+              history = history, 
+              evaluation = eval_score,
+              y_train_pred = y_train_pred,
+              y_validation_pred = y_validation_pred,
+              y_test_pred = y_test_pred))
+}
+
+
+
+rescaled <- function(data, y_train, y_train_pred, y_validation, y_validation_pred, y_test, y_test_pred)
+{
+  min_value <- min(data$close)
+  max_value <- max(data$close)
+  
+  y_train_pred_original <- y_train_pred * (max_value - min_value) + min_value
+  y_train_original <- y_train * (max_value - min_value) + min_value
+  
+  y_validation_pred_original <- y_validation_pred * (max_value - min_value) + min_value
+  y_validation_original <- y_validation * (max_value - min_value) + min_value
+  
+  y_test_pred_original <- y_test_pred * (max_value - min_value) + min_value
+  y_test_original <- y_test * (max_value - min_value) + min_value
+  
+  return(list(y_train_pred_original = y_train_pred_original, 
+              y_train_original = y_train_original,  
+              y_validation_pred_original = y_validation_pred_original,
+              y_validation_original = y_validation_original,
+              y_test_pred_original = y_test_pred_original,
+              y_test_original = y_test_original))
+}
+```
+
+##VCB
+
+```{r}
+VCB <- extract_close_date(VCB)
+```
+```{r}
+VCB_split <- split_dataset(VCB)
+VCB_train_data_org <- VCB_split$train
+VCB_validation_data_org <- VCB_split$validation
+VCB_test_data_org <- VCB_split$test
+
+VCB_train_size <- VCB_split$train_size
+VCB_valid_size <- VCB_split$valid_size
+VCB_test_size <- VCB_split$test_size
+VCB_size <- VCB_split$size
+```
+
+```{r}
+# Define colors for different types
+colors <- c("Training Data" = "blue",
+            "Validation Data" = "orange",
+            "Testing Data" = "green")
+
+# Thêm cột Type để xác định loại dữ liệu
+VCB_train_data_org$Type <- "Training Data"
+VCB_validation_data_org$Type <- "Validation Data"
+VCB_test_data_org$Type <- "Testing Data"
+VCB_combined <- rbind(VCB_train_data_org, VCB_validation_data_org, VCB_test_data_org)
+
+# Plot actual and predicted price
+ggplot(VCB_combined, aes(x = date, y = close, color = Type, linetype = Type)) +
+  geom_line(linewidth = 0.5) +
+  scale_color_manual(values = colors) +
+  scale_linetype_manual(values = rep("solid", length(colors))) +
+  labs(title = "VCB Stock Price Splited",
+       x = "Time",
+       y = "Close Price") +
+  scale_x_date(date_breaks = "6 months", date_labels = "%Y-%m") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "bottom",
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_line(color = "lightgray"))
+```
+```{r}
+VCB_scaled <- scale(VCB)
+VCB_scaled <- time_series(VCB_scaled)
+
+VCB_train_data <- scale(VCB_train_data_org)
+VCB_train_data <- time_series(VCB_train_data)
+
+VCB_validation_data <- scale(VCB_validation_data_org)
+VCB_validation_data <- time_series(VCB_validation_data)
+
+VCB_test_data <- scale(VCB_test_data_org)
+VCB_test_data <- time_series(VCB_test_data)
+
+```
+```{r}
+VCB_data_train_dates <- VCB_train_data$date
+VCB_data_validate_dates <- VCB_validation_data$date
+VCB_data_test_dates <- VCB_test_data$date
+```
+
+```{r}
+VCB_train_data <- VCB_train_data$close
+VCB_validation_data <- VCB_validation_data$close
+VCB_test_data <- VCB_test_data$close
+```
+
+
+```{r}
+VCB_scaled <- VCB_scaled$close
+VCB_eval_score <- data.frame(window = numeric(), mse = numeric(), rmse = numeric(), mape = numeric(), rsquared=numeric(), stringsAsFactors = FALSE)
+
+
+#for (i in 1:15) {
+i=7
+  VCB_train_construct <- construct_data(VCB_train_data, i)
+  VCB_x_train <- VCB_train_construct$x_data
+  VCB_y_train <- VCB_train_construct$y_data
+  
+  VCB_validate_data <-   VCB_scaled[(VCB_train_size-i+1):(VCB_train_size+VCB_valid_size), 1]
+
+  VCB_validation_construct <- construct_data(VCB_validate_data, i)
+  VCB_x_validation <- VCB_validation_construct$x_data
+  VCB_y_validation <- VCB_validation_construct$y_data
+
+  VCB_test_data <- VCB_scaled[(VCB_size-(VCB_test_size+i)+1):VCB_size, ]
+  VCB_test_construct <- construct_data(VCB_test_data, i)
+  VCB_x_test <- VCB_test_construct$x_data
+  VCB_y_test <- VCB_test_construct$y_data
+
+  VCB_result <- rnn_workflow(
+    input_shape = c(i, 1),
+    x_train = VCB_x_train, 
+    y_train = VCB_y_train, 
+    x_validation = VCB_x_validation, 
+    y_validation = VCB_y_validation, 
+    x_test = VCB_x_test,
+    y_test = VCB_y_test,
+    data = VCB,
+    epochs = 80, 
+    batch_size = 32)
+  
+  VCB_eval_score <- rbind(VCB_eval_score, c(i, VCB_result$evaluation$mse, VCB_result$evaluation$rmse, VCB_result$evaluation$mape, VCB_result$evaluation$rsquared))
+  colnames(VCB_eval_score) <- c("window", "mse", "rmse", "mape", "rsquared")
+  
+  VCB_y_train_pred <- VCB_result$y_train_pred
+  VCB_y_validation_pred <- VCB_result$y_validation_pred
+  VCB_y_test_pred <- VCB_result$y_test_pred
+
+#}
+#print(eval_score)
+write.csv(VCB_eval_score, "VCB_evaluationscore.csv")
+```
+
+```{r rescale}
+#VCB_rescale <- rescaled(VCB, 
+                        #VCB_y_train, 
+                        #VCB_y_train_pred, 
+                        #VCB_y_validation, 
+                        #VCB_y_validation_pred,
+                        #VCB_y_test, 
+                        #VCB_y_test_pred)
+
+#VCB_y_train_pred_original = VCB_rescale$y_train_pred_original 
+#VCB_y_train_original = VCB_rescale$y_train_original 
+#VCB_y_validation_pred_original = VCB_rescale$y_validation_pred_original
+#VCB_y_validation_original = VCB_rescale$y_validation_original
+#VCB_y_test_pred_original = VCB_rescale$y_test_pred_original
+#VCB_y_test_original = VCB_rescale$y_test_original
+```
+
+
+
+##ACB
+
+```{r}
+ACB <- extract_close_date(ACB)
+```
+
+```{r}
+ACB_split <- split_dataset(ACB)
+ACB_train_data_org <- ACB_split$train
+ACB_validation_data_org <- ACB_split$validation
+ACB_test_data_org <- ACB_split$test
+
+ACB_train_size <- ACB_split$train_size
+ACB_valid_size <- ACB_split$valid_size
+ACB_test_size <- ACB_split$test_size
+ACB_size <- ACB_split$size
+```
+
+```{r}
+# Thêm cột Type để xác định loại dữ liệu
+ACB_train_data_org$Type <- "Training Data"
+ACB_validation_data_org$Type <- "Validation Data"
+ACB_test_data_org$Type <- "Testing Data"
+ACB_combined <- rbind(ACB_train_data_org, ACB_validation_data_org, ACB_test_data_org)
+
+# Plot actual and predicted price
+ggplot(ACB_combined, aes(x = date, y = close, color = Type, linetype = Type)) +
+  geom_line(linewidth = 0.5) +
+  scale_color_manual(values = colors) +
+  scale_linetype_manual(values = rep("solid", length(colors))) +
+  labs(title = "ACB Stock Price Splited",
+       x = "Time",
+       y = "Close Price") +
+  scale_x_date(date_breaks = "6 months", date_labels = "%Y-%m") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "bottom",
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_line(color = "lightgray"))
+```
+
+
+```{r}
+ACB_scaled <- scale(ACB)
+ACB_scaled <- time_series(ACB_scaled)
+
+ACB_train_data <- scale(ACB_train_data_org)
+ACB_train_data <- time_series(ACB_train_data)
+
+ACB_validation_data <- scale(ACB_validation_data_org)
+ACB_validation_data <- time_series(ACB_validation_data)
+
+ACB_test_data <- scale(ACB_test_data_org)
+ACB_test_data <- time_series(ACB_test_data)
+
+```
+
+```{r}
+ACB_data_train_dates <- ACB_train_data$date
+ACB_data_validate_dates <- ACB_validation_data$date
+ACB_data_test_dates <- ACB_test_data$date
+```
+
+```{r}
+ACB_train_data <- ACB_train_data$close
+ACB_validation_data <- ACB_validation_data$close
+ACB_test_data <- ACB_test_data$close
+```
+
+```{r}
+ACB_scaled <- ACB_scaled$close
+ACB_eval_score <- data.frame(window = numeric(), mse = numeric(), rmse = numeric(), mape = numeric(), rsquared=numeric(), stringsAsFactors = FALSE)
+
+
+#for (i in 1:15) {
+i=7
+  ACB_train_construct <- construct_data(ACB_train_data, i)
+  ACB_x_train <- ACB_train_construct$x_data
+  ACB_y_train <- ACB_train_construct$y_data
+  
+  ACB_validate_data <-  ACB_scaled[(ACB_train_size-i+1):(ACB_train_size+ACB_valid_size), 1]
+
+  ACB_validation_construct <- construct_data(ACB_validate_data, i)
+  ACB_x_validation <- ACB_validation_construct$x_data
+  ACB_y_validation <- ACB_validation_construct$y_data
+
+  ACB_test_data <- ACB_scaled[(ACB_size-(ACB_test_size+i)+1):ACB_size, ]
+  ACB_test_construct <- construct_data(ACB_test_data, i)
+  ACB_x_test <- ACB_test_construct$x_data
+  ACB_y_test <- ACB_test_construct$y_data
+
+  ACB_result <- rnn_workflow(
+    input_shape = c(i, 1),
+    x_train = ACB_x_train, 
+    y_train = ACB_y_train, 
+    x_validation = ACB_x_validation, 
+    y_validation = ACB_y_validation, 
+    x_test = ACB_x_test,
+    y_test = ACB_y_test,
+    data = ACB,
+    epochs = 80, 
+    batch_size = 32)
+  
+  ACB_eval_score <- rbind(ACB_eval_score, c(i, ACB_result$evaluation$mse, ACB_result$evaluation$rmse, ACB_result$evaluation$mape, ACB_result$evaluation$rsquared))
+  colnames(ACB_eval_score) <- c("window", "mse", "rmse", "mape", "rsquared")
+  
+  ACB_y_train_pred <- ACB_result$y_train_pred
+  ACB_y_validation_pred <- ACB_result$y_validation_pred
+  ACB_y_test_pred <- ACB_result$y_test_pred
+
+#}
+#print(eval_score)
+#write.csv(ACB_eval_score, "ACB_evaluationscore.csv")
+```
+
+```{r rescale}
+ACB_rescale <- rescaled(ACB, 
+                        ACB_y_train, 
+                        ACB_y_train_pred, 
+                        ACB_y_validation, 
+                        ACB_y_validation_pred,
+                        ACB_y_test, 
+                        ACB_y_test_pred)
+
+ACB_y_train_pred_original = ACB_rescale$y_train_pred_original 
+ACB_y_train_original = ACB_rescale$y_train_original 
+ACB_y_validation_pred_original = ACB_rescale$y_validation_pred_original
+ACB_y_validation_original = ACB_rescale$y_validation_original
+ACB_y_test_pred_original = ACB_rescale$y_test_pred_original
+ACB_y_test_original = ACB_rescale$y_test_original
+```
+
+```{r}
+# Create data frames for plotting
+ACB_train_orginal_df <- data.frame(Date = ACB_data_train_dates[(i + 1):length(ACB_data_train_dates)], 
+                              Price = ACB_y_train_original, 
+                              Type = "Training Data")
+ACB_train_predicted_df <- data.frame(Date = ACB_data_train_dates[(i + 1):length(ACB_data_train_dates)], 
+                                 Price = ACB_y_train_pred_original, 
+                                 Type = "Training Predictions")
+ACB_validatation_original_df <- data.frame(Date = ACB_data_validate_dates, 
+                                 Price = ACB_y_validation_original, 
+                                 Type = "Validation Data")
+ACB_validatation_predicted_df <- data.frame(Date = ACB_data_validate_dates, 
+                                    Price = ACB_y_validation_pred_original, 
+                                    Type = "Validation Predictions")
+ACB_test_original_df <- data.frame(Date = ACB_data_test_dates, 
+                             Price = ACB_y_test_original, 
+                             Type = "Testing Data")
+ACB_test_predicted_df <- data.frame(Date = ACB_data_test_dates, 
+                                Price = ACB_y_test_pred_original, 
+                                Type = "Testing Predictions")
+
+# Combine all data frames
+ACB_plot_data <- rbind(ACB_train_orginal_df, ACB_train_predicted_df, 
+                   ACB_validatation_original_df, ACB_validatation_predicted_df, 
+                   ACB_test_original_df, ACB_test_predicted_df)
+
+# Define colors for different types
+colors <- c("Training Data" = "blue",
+            "Training Predictions" = "red",
+            "Validation Data" = "orange",
+            "Validation Predictions" = "red",
+            "Testing Data" = "green",
+            "Testing Predictions" = "red")
+
+# Plot actual and predicted price
+ggplot(ACB_plot_data, aes(x = Date, y = Price, color = Type, linetype = Type)) +
+  geom_line(linewidth = 0.5) +
+  scale_color_manual(values = colors) +
+  scale_linetype_manual(values = rep("solid", length(colors))) +
+  labs(title = "ACB Stock Price Predictions With RNN",
+       x = "Time",
+       y = "Close Price") +
+  scale_x_date(date_breaks = "6 months", date_labels = "%Y-%m") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "bottom",
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_line(color = "lightgray"))
+
+```
+
+##BID
+
+```{r}
+BID <- extract_close_date(BID)
+```
+
+```{r}
+BID_split <- split_dataset(BID)
+BID_train_data_org <- BID_split$train
+BID_validation_data_org <- BID_split$validation
+BID_test_data_org <- BID_split$test
+
+BID_train_size <- BID_split$train_size
+BID_valid_size <- BID_split$valid_size
+BID_test_size <- BID_split$test_size
+BID_size <- BID_split$size
+```
+
+```{r}
+# Thêm cột Type để xác định loại dữ liệu
+BID_train_data_org$Type <- "Training Data"
+BID_validation_data_org$Type <- "Validation Data"
+BID_test_data_org$Type <- "Testing Data"
+BID_combined <- rbind(BID_train_data_org, BID_validation_data_org, BID_test_data_org)
+
+# Plot actual and predicted price
+ggplot(BID_combined, aes(x = date, y = close, color = Type, linetype = Type)) +
+  geom_line(linewidth = 0.5) +
+  scale_color_manual(values = colors) +
+  scale_linetype_manual(values = rep("solid", length(colors))) +
+  labs(title = "BID Stock Price Splited",
+       x = "Time",
+       y = "Close Price") +
+  scale_x_date(date_breaks = "6 months", date_labels = "%Y-%m") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "bottom",
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_line(color = "lightgray"))
+```
+
+```{r}
+BID_scaled <- scale(BID)
+BID_scaled <- time_series(BID_scaled)
+
+BID_train_data <- scale(BID_train_data_org)
+BID_train_data <- time_series(BID_train_data)
+
+BID_validation_data <- scale(BID_validation_data_org)
+BID_validation_data <- time_series(BID_validation_data)
+
+BID_test_data <- scale(BID_test_data_org)
+BID_test_data <- time_series(BID_test_data)
+```
+
+```{r}
+BID_data_train_dates <- BID_train_data$date
+BID_data_validate_dates <- BID_validation_data$date
+BID_data_test_dates <- BID_test_data$date
+```
+
+```{r}
+BID_train_data <- BID_train_data$close
+BID_validation_data <- BID_validation_data$close
+BID_test_data <- BID_test_data$close
+
+```
+
+```{r}
+BID_scaled <- BID_scaled$close
+BID_eval_score <- data.frame(window = numeric(), mse = numeric(), rmse = numeric(), mape = numeric(), rsquared=numeric(), stringsAsFactors = FALSE)
+
+
+#for (i in 1:15) {
+i=7
+  BID_train_construct <- construct_data(BID_train_data, i)
+  BID_x_train <- BID_train_construct$x_data
+  BID_y_train <- BID_train_construct$y_data
+  
+  BID_validate_data <-  BID_scaled[(BID_train_size-i+1):(BID_train_size+BID_valid_size), 1]
+
+  BID_validation_construct <- construct_data(BID_validate_data, i)
+  BID_x_validation <- BID_validation_construct$x_data
+  BID_y_validation <- BID_validation_construct$y_data
+
+  BID_test_data <- BID_scaled[(BID_size-(BID_test_size+i)+1):BID_size, ]
+  BID_test_construct <- construct_data(BID_test_data, i)
+  BID_x_test <- BID_test_construct$x_data
+  BID_y_test <- BID_test_construct$y_data
+
+  BID_result <- rnn_workflow(
+    input_shape = c(i, 1),
+    x_train = BID_x_train, 
+    y_train = BID_y_train, 
+    x_validation = BID_x_validation, 
+    y_validation = BID_y_validation, 
+    x_test = BID_x_test,
+    y_test = BID_y_test,
+    data = BID,
+    epochs = 80, 
+    batch_size = 32)
+  
+  BID_eval_score <- rbind(BID_eval_score, c(i, BID_result$evaluation$mse, BID_result$evaluation$rmse, BID_result$evaluation$mape, BID_result$evaluation$rsquared))
+  colnames(BID_eval_score) <- c("window", "mse", "rmse", "mape", "rsquared")
+  
+  BID_y_train_pred <- BID_result$y_train_pred
+  BID_y_validation_pred <- BID_result$y_validation_pred
+  BID_y_test_pred <- BID_result$y_test_pred
+
+#}
+#print(eval_score)
+write.csv(BID_eval_score, "BID_evaluationscore.csv")
+```
+
+```{r BID_rescale}
+BID_rescale <- rescaled(BID, 
+                        BID_y_train, 
+                        BID_y_train_pred, 
+                        BID_y_validation, 
+                        BID_y_validation_pred,
+                        BID_y_test, 
+                        BID_y_test_pred)
+
+BID_y_train_pred_original = BID_rescale$y_train_pred_original
+BID_y_train_original = BID_rescale$y_train_original 
+BID_y_validation_pred_original = BID_rescale$y_validation_pred_original
+BID_y_validation_original = BID_rescale$y_validation_original
+BID_y_test_pred_original = BID_rescale$y_test_pred_original
+BID_y_test_original = BID_rescale$y_test_original
+```
+
+```{r}
+# Create data frames for plotting
+BID_train_orginal_df <- data.frame(Date = BID_data_train_dates[(i + 1):length(BID_data_train_dates)], 
+                              Price = BID_y_train_original, 
+                              Type = "Training Data")
+BID_train_predicted_df <- data.frame(Date = BID_data_train_dates[(i + 1):length(BID_data_train_dates)], 
+                                 Price = BID_y_train_pred_original, 
+                                 Type = "Training Predictions")
+BID_validatation_original_df <- data.frame(Date = BID_data_validate_dates, 
+                                 Price = BID_y_validation_original, 
+                                 Type = "Validation Data")
+BID_validatation_predicted_df <- data.frame(Date = BID_data_validate_dates, 
+                                    Price = BID_y_validation_pred_original, 
+                                    Type = "Validation Predictions")
+BID_test_original_df <- data.frame(Date = BID_data_test_dates, 
+                             Price = BID_y_test_original, 
+                             Type = "Testing Data")
+BID_test_predicted_df <- data.frame(Date = BID_data_test_dates, 
+                                Price = BID_y_test_pred_original, 
+                                Type = "Testing Predictions")
+
+# Combine all data frames
+BID_plot_data <- rbind(BID_train_orginal_df, BID_train_predicted_df, 
+                   BID_validatation_original_df, BID_validatation_predicted_df, 
+                   BID_test_original_df, BID_test_predicted_df)
+
+# Define colors for different types
+colors <- c("Training Data" = "blue",
+            "Training Predictions" = "red",
+            "Validation Data" = "orange",
+            "Validation Predictions" = "red",
+            "Testing Data" = "green",
+            "Testing Predictions" = "red")
+
+# Plot actual and predicted price
+ggplot(BID_plot_data, aes(x = Date, y = Price, color = Type, linetype = Type)) +
+  geom_line(linewidth = 0.5) +
+  scale_color_manual(values = colors) +
+  scale_linetype_manual(values = rep("solid", length(colors))) +
+  labs(title = "BID Stock Price Predictions With RNN",
+       x = "Time",
+       y = "Close Price") +
+  scale_x_date(date_breaks = "6 months", date_labels = "%Y-%m") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "bottom",
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_line(color = "lightgray"))
+
+```
+
+BƯỚC 5: XÂY DỰNG MODEL LSTM
+```{r library}
+library(tidyverse)
+library(keras)
+library(xts)
+library(caret)
+library(devtools)
+library(reticulate)
+library(tensorflow)
+```
+
+```{r input data}
+VCB <- read_csv("E:/OneDrive/Documents/LSTM/VCB_stock.csv")
+ACB <- read_csv("E:/OneDrive/Documents/LSTM/ACB_stock.csv")
+BID <- read_csv("E:/OneDrive/Documents/LSTM/BID_stock.csv")
+```
+
+```{r process data}
+processData <- function(data) {
+  # Chuẩn bị thông tin cho việc scale
+  preProcValues <- preProcess(data, method = c("range"), rangeBounds = c(0, 1))
+  
+  # Scale dữ liệu
+  data_scaled <- predict(preProcValues, data)
+  data_scaled$date <- as.Date(data_scaled$date)
+  data_scaled$close <- xts(data_scaled$close, order.by = data_scaled$date)
+  return (data_scaled)
+}
+```
+
+```{r LSTM function}
+LSTM <- function(data, time_step = 1, input_dim = 1, hidden_dim = 10, output_dim = 1, num_epochs = 80) {
+  data_scaled <- processData(data)
+  
+  length_data <- nrow(data_scaled)
+  length_train <- round(length_data * 0.8)
+  length_test <- round(length_data * 0.05)
+  length_validation <- length_data - (length_train + length_test)
+  
+  train_data <- data_scaled[1:length_train, c(12)]
+  test_data <- data_scaled[(length_train + 1):(length_test+length_train),c(12)]
+  validation_data <- data_scaled[(length_test + length_train + 1):nrow(data),c(12)]
+  
+  
+  x_train <- list()
+  y_train <- list()
+  
+  for (i in (time_step+1):length_train) {
+    x_train[[length(x_train) + 1]] <- train_data[(i - time_step):(i - 1), 1]
+    y_train[[length(y_train) + 1]] <- train_data[i, 1]
+  }
+  
+  
+  x_test <- list()
+  y_test <- list()
+  
+  for (i in (time_step+1):length_test) {
+    x_test[[length(x_test) + 1]] <- test_data[(i - time_step):(i - 1), 1]
+    y_test[[length(y_test) + 1]] <- test_data[i, 1]
+  }
+  
+  
+  x_validation <- list()
+  y_validation <- list()
+  
+  for (i in (time_step+1):length_validation) {
+    x_validation[[length(x_validation) + 1]] <- validation_data[(i - time_step):(i - 1), 1]
+    y_validation[[length(y_validation) + 1]] <- validation_data[i, 1]
+  }
+  
+  
+  # Chuyển thành ma trận/array
+  x_train_array <- array(unlist(x_train), dim = c(length(x_train), time_step, 1))
+  y_train_array <- matrix(unlist(y_train), ncol = 1)
+  
+  x_test_array <- array(unlist(x_test), dim = c(length(x_test), time_step, 1))
+  y_test_array <- matrix(unlist(y_test), ncol = 1)
+  
+  x_validation_array <- array(unlist(x_validation), dim = c(length(x_validation), time_step, 1))
+  y_validation_array <- matrix(unlist(y_validation), ncol = 1)
+  
+  model <- keras_model_sequential() %>%
+    layer_lstm(units = 20, return_sequences = TRUE, input_shape = c(time_step, input_dim)) %>%
+    layer_lstm(units = hidden_dim, return_sequences = TRUE) %>%
+    layer_lstm(units = hidden_dim) %>%
+    layer_dense(units = hidden_dim) %>%
+    layer_dropout(rate = 0.5) %>%
+    layer_dense(units = output_dim)
+  summary(model)
+  
+  # Compile the model using the mean squared error loss and the Adam optimizer
+  model %>% compile(loss = "mean_squared_error", optimizer = optimizer_adam(lr = 0.01))
+  
+  # Train the model on the training data
+  history <- model %>% fit(x_train_array, y_train_array, epochs = num_epochs, batch_size = 4, validation_data = list(x_validation_array, y_validation_array))
+  
+  # Extract predictions from the stimated model
+  y_train_pred <- model %>% predict(x_train_array)
+  y_test_pred <- model %>% predict(x_test_array)
+  y_validation_pred <- model %>% predict(x_validation_array)
+  
+  min_value <- min(data$close)
+  max_value <- max(data$close)
+  y_train_pred_original <- y_train_pred * (max_value - min_value) + min_value
+  y_train_original <- y_train_array * (max_value - min_value) + min_value
+  
+  y_test_pred<- predict(object = model, x = x_test_array)
+  
+  y_test_pred_original <- y_test_pred * (max_value - min_value) + min_value
+  y_test_original <- y_test_array * (max_value - min_value) + min_value
+  
+  y_validation_pred<- predict(object = model, x = x_validation_array)
+  
+  y_validation_pred_original <- y_validation_pred * (max_value - min_value) + min_value
+  y_validation_original <- y_validation_array * (max_value - min_value) + min_value
+  
+  # Shift the predicted values to start from where the training data predictions end
+  shift <- length(y_train_pred_original)
+  y_test_pred_orig_shifted <- c(rep(NA, shift), y_test_pred_original[,1])
+  
+  shift <- shift + length(y_test_pred_original)
+  y_validation_pred_orig_shifted <- c(rep(NA, shift), y_validation_pred_original[,1])
+  
+  mse <- history$metrics$val_loss[length(history$metrics$val_loss)]
+  mse <- round(mse, 7)
+  
+  rmse <- sqrt(mse)
+  
+  mape <- mean(abs((y_test_original - y_test_pred_original) / y_test_original)) * 100
+  
+  ss_res <- sum((y_test_original - y_test_pred_original)^2)
+  ss_tot <- sum((y_test_original - mean(y_test_original))^2)
+  rsquared <- 1 - (ss_res/ss_tot)
+  
+  eval_score <- list(time_step, num_epochs, mse, rmse, mape, rsquared)
+  
+  # Plot the training and predicted values
+  options(repr.plot.width=100, repr.plot.height=80)
+  plot(data$close, type = "l", main="LSTM Prediction",col = "green", xlab = "Day", ylab = "Price",lwd=1)
+  lines(y_train_pred_original, col = "red",lwd=1)
+  lines(y_test_pred_orig_shifted, col = "blue",lwd=1)
+  lines(y_validation_pred_orig_shifted, col = "purple", lwd=1)
+  legend(x = "topleft", legend = c("Original", "Train Predictions","Test-Prediction", "Validation-Prediction"), col = c("green","blue" ,"red","purple"), lwd = 1)
+  grid()
+}
+```
+
+```{r testing window size}
+test_win_size <- function(stock) {
+  eval_score <- data.frame(window = numeric(), epochs = numeric(), mse = numeric(), rmse = numeric(), mape = numeric(), rsquared=numeric(), stringsAsFactors = FALSE)
+for (i in 1:10) {
+  eval_score <- rbind(eval_score, LSTM(data = stock, num_epochs = 40, time_step = i))
+}
+  colnames(eval_score) <- c("window", "epochs", "mse", "rmse", 'mape', 'rsquared')
+  
+  return (eval_score)
+}
+
+```
+
+```{r execute testing}
+test_win_size(VCB)
+test_win_size(ACB)
+test_win_size(BID)
+```
+
+```{r execute model}
+LSTM(VCB, time_step = 1)
+LSTM(ACB, time_step = 6)
+LSTM(BID, time_step = 6)
+```
+```
