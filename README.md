@@ -9,21 +9,26 @@ Dự án này tập trung vào việc phân tích và dự đoán giá cổ phi�
 ```plaintext
 Stock_Price_Prediction
 │── README.md              # Giới thiệu dự án
-│── reports/ # Báo cáo phân tích
+│── reports/               # Báo cáo phân tích
 │── data/                  # Chứa dữ liệu đầu vào
 │── scripts/               # Chứa mã R Markdown
+```
 
 ## Cách sử dụng
-1. Cài đặt môi trường
+### 1. Cài đặt môi trường
+```r
 install.packages(c("tidyverse", "ggplot2", "forecast", "tensorflow", "keras"))
+```
 
-2. Chạy mã R Markdown
-Chạy tệp Stock_Prediction_Analysis.rmd bằng cách mở trong RStudio và chạy từng bước
+### 2. Chạy mã R Markdown
+Chạy tệp `Stock_Prediction_Analysis.rmd` bằng cách mở trong RStudio và chạy từng bước.
 Hoặc sử dụng dòng lệnh R để tạo báo cáo:
+```r
 rmarkdown::render("Stock_Prediction_Analysis.rmd")
+```
 
 ## Kết quả
-Kết quả dự báo giá được lưu trong thư mục reports/.
+Kết quả dự báo giá được lưu trong thư mục `reports/`.
 
 ## Tổng quan
 
@@ -38,7 +43,7 @@ Phân tích dữ liệu chứng khoán giúp nắm bắt xu hướng thị trư�
 - **Nguồn dữ liệu**: Giá cổ phiếu 3 ngân hàng (VCB: 2013–2023, ACB: 2013–2023, BIDV: 2014–2023).
 - **Biến chính**: Giá mở cửa, cao nhất, thấp nhất, đóng cửa, khối lượng giao dịch.
 
-## 🛠Phương pháp
+## 🛠 Phương pháp
 
 ### Tiền xử lý dữ liệu
 - Chuẩn hóa dữ liệu bằng **Min-Max Scaling**.
@@ -97,4 +102,4 @@ Phân tích dữ liệu chứng khoán giúp nắm bắt xu hướng thị trư�
 
 ---
 
-**Liên hệ**: Lê Huỳnh Thúy Vy
+**Tác giả**: Lê Huỳnh Thúy Vy
