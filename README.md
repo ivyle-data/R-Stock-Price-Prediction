@@ -90,6 +90,7 @@ Phân tích dữ liệu chứng khoán giúp nắm bắt xu hướng thị trư�
 ### Kết luận
 - Cả RNN và LSTM đều hiệu quả trong dự đoán giá cổ phiếu, nhưng RNN phù hợp hơn với dữ liệu nhỏ.
 - Dữ liệu giá đóng cửa kết hợp khối lượng giao dịch là yếu tố quan trọng.
+Mô hình RNN hoạt động tốt hơn trên cả ba dữ liệu ngân hàng, mặc dù mô hình LSTM được đánh giá cao hơn về mặt lý thuyết. Điều này có thể là do dữ liệu của cả ba ngân hàng còn khá ít (trung bình 2.650 dòng/ngân hàng), đủ để mô hình RNN hoạt động tốt nhưng chưa đủ để mô hình LSTM phát huy hiệu quả.
 
 ### Hạn chế
 - Mô hình chưa xử lý tốt nhiễu dữ liệu và biến động thị trường đột ngột.
