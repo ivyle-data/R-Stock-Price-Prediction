@@ -43,7 +43,7 @@ Phân tích dữ liệu chứng khoán giúp nắm bắt xu hướng thị trư�
 - **Nguồn dữ liệu**: Giá cổ phiếu 3 ngân hàng (VCB: 2013–2023, ACB: 2013–2023, BIDV: 2014–2023).
 - **Biến chính**: Giá mở cửa, cao nhất, thấp nhất, đóng cửa, khối lượng giao dịch.
 
-## 🛠 Phương pháp
+## Phương pháp
 
 ### Tiền xử lý dữ liệu
 - Chuẩn hóa dữ liệu bằng **Min-Max Scaling**.
